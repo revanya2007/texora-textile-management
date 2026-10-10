@@ -471,9 +471,11 @@ export default function ExportInvoicesPage() {
             <div className="flex justify-between items-start border-b border-border pb-6">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-soft-mint border border-light-mint flex items-center justify-center font-bold text-primary font-serif">
-                    TX
-                  </div>
+                  <img 
+                    src="/texora-icon.png" 
+                    alt="Texora Logo" 
+                    className="w-9 h-9 rounded-lg object-contain bg-white border border-slate-200 p-0.5" 
+                  />
                   <span className="text-xl font-bold text-navy font-serif italic">TEXORA TEXTILE CORP</span>
                 </div>
                 <p className="text-xs text-secondary-text mt-1">Export Processing Zone, Global Mill Gate</p>

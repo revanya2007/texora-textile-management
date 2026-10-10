@@ -88,9 +88,11 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
       {/* Brand Header */}
       <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm tracking-wider shadow-sm">
-            TX
-          </div>
+          <img 
+            src="/texora-icon.png" 
+            alt="Texora Logo" 
+            className="w-9 h-9 rounded-lg object-contain bg-white p-0.5 shadow-sm border border-slate-700/60 shrink-0" 
+          />
           <div>
             <div className="text-base font-bold tracking-tight text-white leading-none">TEXORA</div>
             <div className="text-[10px] tracking-widest text-emerald-400 uppercase font-medium mt-0.5">Manufacturing ERP</div>

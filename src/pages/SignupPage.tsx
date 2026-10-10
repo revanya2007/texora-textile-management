@@ -77,9 +77,11 @@ export default function SignupPage() {
         <Card>
           <CardHeader className="text-center pt-8 pb-6 border-none">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-soft-mint rounded-full flex items-center justify-center border-2 border-light-mint text-navy font-bold text-2xl font-serif">
-                TX
-              </div>
+              <img 
+                src="/texora-icon.png" 
+                alt="Texora Logo" 
+                className="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 border border-slate-200 shadow-sm" 
+              />
             </div>
             <CardTitle className="text-2xl">Create {portalName} Account</CardTitle>
             <p className="text-secondary-text text-sm mt-2">Sign up to access your portal</p>
