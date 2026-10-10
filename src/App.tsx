@@ -33,6 +33,7 @@ import DomesticPaymentsPage from './pages/domestic/DomesticPaymentsPage';
 import DomesticPieceTrackingPage from './pages/domestic/DomesticPieceTrackingPage';
 
 import { AuthProvider } from './context/AuthContext';
+import RoleSelectionModal from './components/auth/RoleSelectionModal';
 import { isSupabaseConfigured } from './lib/supabase';
 import { AlertTriangle } from 'lucide-react';
 
@@ -48,6 +49,7 @@ function PortalDashboard() {
 function App() {
   return (
     <AuthProvider>
+      <RoleSelectionModal />
       {!isSupabaseConfigured && (
         <div className="bg-amber-500 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2 shadow-md z-50 sticky top-0">
           <AlertTriangle size={18} className="shrink-0" />

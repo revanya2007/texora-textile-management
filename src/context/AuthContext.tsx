@@ -9,9 +9,11 @@ interface AuthContextType {
   profile: Profile | null;
   role: UserRole | null;
   isLoading: boolean;
+  needsRoleSelection: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, portal: 'export' | 'domestic', role?: UserRole) => Promise<{ error: string | null }>;
-  signInWithGoogle: (portal?: 'export' | 'domestic') => Promise<{ error: string | null }>;
+  signInWithGoogle: (portal?: 'export' | 'domestic', role?: UserRole) => Promise<{ error: string | null }>;
+  updateRole: (newRole: UserRole) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   hasAccessToPortal: (portal?: string) => boolean;
@@ -35,8 +37,28 @@ async function fetchUserProfile(currentUser: User): Promise<Profile | null> {
       console.warn('Could not fetch profile from table:', error.message);
     }
 
+    // Check if there was a pending OAuth role selected prior to redirect
+    const pendingRole = localStorage.getItem('texora_pending_role');
+    if (pendingRole && isValidRole(pendingRole)) {
+      localStorage.removeItem('texora_pending_role');
+      const updatedProfile: Profile = {
+        id: currentUser.id,
+        email: currentUser.email || '',
+        first_name: currentUser.user_metadata?.first_name || null,
+        last_name: currentUser.user_metadata?.last_name || null,
+        role: pendingRole,
+        created_at: data?.created_at || currentUser.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      try {
+        await supabase.from('profiles').upsert([updatedProfile], { onConflict: 'id' });
+      } catch (e) {
+        console.warn('Failed to upsert pending role profile:', e);
+      }
+      return updatedProfile;
+    }
+
     if (data && isValidRole(data.role)) {
-      // If user metadata has admin or higher role, sync and apply
       const metaRole = currentUser.user_metadata?.role;
       if (metaRole === 'admin' && data.role !== 'admin') {
         data.role = 'admin';
@@ -51,7 +73,7 @@ async function fetchUserProfile(currentUser: User): Promise<Profile | null> {
     const rawRole = currentUser.user_metadata?.role;
     const metaRole: UserRole = isValidRole(rawRole) 
       ? rawRole 
-      : (currentUser.user_metadata?.portal === 'export' ? 'export_staff' : 'domestic_staff');
+      : (currentUser.user_metadata?.portal === 'domestic' ? 'domestic_staff' : 'export_staff');
 
     const fallbackProfile: Profile = {
       id: currentUser.id,
@@ -191,17 +213,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGoogle = async (portal: 'export' | 'domestic' = 'export'): Promise<{ error: string | null }> => {
+  const signInWithGoogle = async (
+    portal: 'export' | 'domestic' = 'export', 
+    role?: UserRole
+  ): Promise<{ error: string | null }> => {
     try {
+      if (role && isValidRole(role)) {
+        localStorage.setItem('texora_pending_role', role);
+      }
       const redirectUrl = `${window.location.origin}/${portal}/dashboard`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
         },
       });
 
@@ -209,9 +233,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
 
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+
       return { error: null };
     } catch (err: any) {
       return { error: err?.message || 'Failed to initialize Google authentication.' };
+    }
+  };
+
+  const updateRole = async (newRole: UserRole): Promise<{ error: string | null }> => {
+    try {
+      if (!user) return { error: 'No active user found.' };
+      if (!isValidRole(newRole)) return { error: 'Invalid role selected.' };
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email || '',
+          role: newRole,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+
+      if (error) {
+        console.warn('Profile update error:', error.message);
+      }
+
+      // Refresh local profile state
+      setProfile(prev => prev ? { ...prev, role: newRole } : {
+        id: user.id,
+        email: user.email || '',
+        first_name: user.user_metadata?.first_name || null,
+        last_name: user.user_metadata?.last_name || null,
+        role: newRole,
+        created_at: user.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to update role.' };
     }
   };
 
@@ -239,6 +302,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ? profile.role 
     : (isValidRole(user?.user_metadata?.role) ? user.user_metadata.role : null);
 
+  const needsRoleSelection = !isLoading && !!user && (!profile || !profile.role || !isValidRole(profile.role));
+
   const hasAccessToPortal = (portal?: string): boolean => {
     if (!role) return false;
     if (role === 'admin') return true;
@@ -260,9 +325,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         role,
         isLoading,
+        needsRoleSelection,
         signIn,
         signUp,
         signInWithGoogle,
+        updateRole,
         signOut,
         refreshProfile,
         hasAccessToPortal,

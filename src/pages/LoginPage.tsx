@@ -86,13 +86,19 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setError(null);
     setIsGoogleLoading(true);
+    const timeout = setTimeout(() => {
+      setIsGoogleLoading(false);
+    }, 6000);
+
     try {
       const { error: googleErr } = await signInWithGoogle(validPortal);
       if (googleErr) {
+        clearTimeout(timeout);
         setError(googleErr);
         setIsGoogleLoading(false);
       }
     } catch (err: any) {
+      clearTimeout(timeout);
       setError(err?.message || 'Failed to start Google sign in.');
       setIsGoogleLoading(false);
     }

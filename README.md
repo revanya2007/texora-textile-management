@@ -2,18 +2,37 @@
 
 **Tagline:** "From Yarn to Delivery, All in One."
 
-Texora is a textile factory management application designed to simplify factory operations, reduce manual work, and help manage textile production and subcontract stitching.
+[![Live Demo](https://img.shields.io/badge/Live_Deployment-texora--rho.vercel.app-26965D?style=for-the-badge&logo=vercel)](https://texora-rho.vercel.app)
+[![Supabase](https://img.shields.io/badge/Backend-Supabase_PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![React](https://img.shields.io/badge/Frontend-React_+_TypeScript_+_Vite-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 
-## Project Overview (Phase 1)
-This repository contains the foundation for Phase 1 of Texora, which establishes the UI framework, design system (Texora Mint Industrial Pro), and authentication integration.
+---
+
+### 🌐 Live Production Application
+👉 **[https://texora-rho.vercel.app](https://texora-rho.vercel.app)**
+
+---
+
+## Project Overview
+Texora is an enterprise-grade textile factory management system designed to streamline spinning, weaving, dyeing, export operations, worker attendance, and domestic subcontract garmenting.
+
+### 🚀 Key Features & Modules
+1. **Export Operations**: Yarn inventory, export orders, suppliers, buyers, dispatch, invoices, and accounting.
+2. **AI Production Time Prediction & Live Progress Tracking**: Duration range prediction for Spinning, Weaving, and Dyeing stages, milestone progress markers (0%-100%), and machine performance metrics.
+3. **Worker & Wage Management**: Attendance logging, overtime, piece-rate and daily wage calculation, worker profiles.
+4. **Domestic Subcontract Management**: Company profiles, work orders, piece tracking, deliveries, and payment tracking.
+5. **Role-Based Access Control**: Dual-portal architecture with Row-Level Security (RLS) policies for Export, Domestic, and Admin roles.
+6. **Authentication**: Supabase Auth with Email/Password and one-click Google OAuth authentication with onboarding role selection.
 
 ### Technology Stack
 - **Framework:** React + TypeScript + Vite
-- **Styling:** Tailwind CSS (v4)
+- **Styling:** Tailwind CSS
 - **Routing:** React Router
+- **Charts:** Recharts
 - **Forms & Validation:** React Hook Form + Zod
 - **Icons:** Lucide React
-- **Authentication/Backend:** Supabase
+- **Backend & Database:** Supabase PostgreSQL + Auth + Row Level Security (RLS)
+- **Deployment:** Vercel (SPA Rewrites)
 
 ## Setup Instructions
 

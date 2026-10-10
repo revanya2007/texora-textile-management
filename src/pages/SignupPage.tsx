@@ -42,7 +42,7 @@ export default function SignupPage() {
 
   const defaultRole: UserRole = validPortal === 'export' ? 'export_staff' : 'domestic_staff';
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormValues>({
+  const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       role: defaultRole,
@@ -52,13 +52,20 @@ export default function SignupPage() {
   const handleGoogleSignUp = async () => {
     setError(null);
     setIsGoogleLoading(true);
+    const timeout = setTimeout(() => {
+      setIsGoogleLoading(false);
+    }, 6000);
+
     try {
-      const { error: googleErr } = await signInWithGoogle(validPortal);
+      const selectedRole = (getValues('role') as UserRole) || defaultRole;
+      const { error: googleErr } = await signInWithGoogle(validPortal, selectedRole);
       if (googleErr) {
+        clearTimeout(timeout);
         setError(googleErr);
         setIsGoogleLoading(false);
       }
     } catch (err: any) {
+      clearTimeout(timeout);
       setError(err?.message || 'Failed to start Google authentication.');
       setIsGoogleLoading(false);
     }
@@ -127,6 +134,39 @@ export default function SignupPage() {
                   </div>
                 )}
 
+                {/* Role / Position selector at top */}
+                <div className="space-y-1.5 mb-5 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Step 1: Choose Your Role / Position
+                  </label>
+                  <select
+                    {...register('role')}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm font-medium text-navy focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-2xs"
+                  >
+                    {validPortal === 'export' ? (
+                      <>
+                        <option value="export_staff">Export Staff</option>
+                        <option value="export_manager">Export Manager</option>
+                        <option value="admin">Administrator</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="domestic_staff">Domestic Staff</option>
+                        <option value="domestic_manager">Domestic Manager</option>
+                        <option value="subcontractor">Subcontractor</option>
+                        <option value="admin">Administrator</option>
+                      </>
+                    )}
+                  </select>
+                  <p className="text-[11px] text-slate-500">
+                    This role will be applied to your account automatically upon signup.
+                  </p>
+                </div>
+
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  Step 2: Sign up with Google or Email
+                </div>
+
                 {/* Google OAuth Button */}
                 <button
                   type="button"
@@ -170,39 +210,15 @@ export default function SignupPage() {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                
-                <Input
-                  label="Email"
-                  type="email"
-                  placeholder="name@example.com"
-                  {...register('email')}
-                  error={errors.email?.message}
-                />
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="name@example.com"
+                    {...register('email')}
+                    error={errors.email?.message}
+                  />
 
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-navy">Role / Position</label>
-                  <select
-                    {...register('role')}
-                    className="w-full h-10 px-3 rounded-md border border-border bg-white text-sm text-navy focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  >
-                    {validPortal === 'export' ? (
-                      <>
-                        <option value="export_staff">Export Staff</option>
-                        <option value="export_manager">Export Manager</option>
-                        <option value="admin">Administrator</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="domestic_staff">Domestic Staff</option>
-                        <option value="domestic_manager">Domestic Manager</option>
-                        <option value="subcontractor">Subcontractor</option>
-                        <option value="admin">Administrator</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                
-                <div className="relative">
+                  <div className="relative">
                   <Input
                     label="Password"
                     type={showPassword ? 'text' : 'password'}
