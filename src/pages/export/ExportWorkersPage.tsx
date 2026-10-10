@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Users, 
   Calendar, 
@@ -63,6 +63,33 @@ const fallbackWorkers: Worker[] = [
   { id: 'w-5', worker_code: 'WRK-005', name: 'Anand Krishnamurthy', job_role: 'QC Supervisor', department: 'Quality', wage_type: 'daily', wage_rate: 900, phone: '+91 98421 11005', status: 'active', joining_date: '2025-01-20' }
 ];
 
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const workerSchema = z.object({
+  name: z.string().min(1, 'Worker name is required'),
+  worker_code: z.string().optional(),
+  job_role: z.string().min(1, 'Job role is required'),
+  department: z.string().min(1, 'Department is required'),
+  wage_type: z.enum(['daily', 'piece_rate', 'monthly']),
+  wage_rate: z.number().positive('Wage rate must be greater than 0'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+});
+
+type WorkerFormValues = z.infer<typeof workerSchema>;
+
+const wageSchema = z.object({
+  amount: z.number().positive('Amount must be greater than 0'),
+  payment_date: z.string().min(1, 'Payment date is required'),
+  payment_mode: z.string().min(1, 'Payment mode is required'),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type WageFormValues = z.infer<typeof wageSchema>;
+
 export default function ExportWorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -79,24 +106,32 @@ export default function ExportWorkersPage() {
   const [selectedWorkerForWage, setSelectedWorkerForWage] = useState<Worker | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  // Forms
-  const [newWorker, setNewWorker] = useState({
-    name: '',
-    worker_code: '',
-    job_role: '',
-    department: 'Weaving',
-    wage_type: 'daily' as 'daily' | 'piece_rate' | 'monthly',
-    wage_rate: 750,
-    phone: '',
-    address: ''
+  const { 
+    register: registerWorker, 
+    handleSubmit: handleSubmitWorker, 
+    reset: resetWorker, 
+    formState: { errors: workerErrors, isSubmitting: isWorkerSubmitting } 
+  } = useForm<WorkerFormValues>({
+    resolver: zodResolver(workerSchema),
+    defaultValues: {
+      department: 'Weaving',
+      wage_type: 'daily',
+      wage_rate: 750,
+    }
   });
 
-  const [wageForm, setWageForm] = useState({
-    amount: 5000,
-    payment_date: new Date().toISOString().split('T')[0],
-    payment_mode: 'Bank Transfer',
-    reference: '',
-    notes: ''
+  const { 
+    register: registerWage, 
+    handleSubmit: handleSubmitWage, 
+    reset: resetWage, 
+    formState: { errors: wageErrors, isSubmitting: isWageSubmitting } 
+  } = useForm<WageFormValues>({
+    resolver: zodResolver(wageSchema),
+    defaultValues: {
+      amount: 5000,
+      payment_date: new Date().toISOString().split('T')[0],
+      payment_mode: 'Bank Transfer',
+    }
   });
 
   const fetchAllData = async () => {
@@ -213,23 +248,22 @@ export default function ExportWorkersPage() {
     }
   };
 
-  const handleAddWorkerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmitAddWorker = async (data: WorkerFormValues) => {
     try {
-      const code = newWorker.worker_code || `WRK-${String(workers.length + 1).padStart(3, '0')}`;
+      const code = data.worker_code?.trim() || `WRK-${String(workers.length + 1).padStart(3, '0')}`;
       const payload = {
         worker_code: code,
-        name: newWorker.name,
-        job_role: newWorker.job_role,
-        department: newWorker.department,
-        wage_type: newWorker.wage_type,
-        wage_rate: Number(newWorker.wage_rate),
-        phone: newWorker.phone || null,
-        address: newWorker.address || null,
+        name: data.name.trim(),
+        job_role: data.job_role.trim(),
+        department: data.department,
+        wage_type: data.wage_type,
+        wage_rate: Number(data.wage_rate),
+        phone: data.phone?.trim() || null,
+        address: data.address?.trim() || null,
         status: 'active' as const
       };
 
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('export_workers')
         .insert([payload])
         .select()
@@ -237,44 +271,43 @@ export default function ExportWorkersPage() {
 
       if (error) throw error;
 
-      setWorkers(prev => [...prev, data as Worker]);
-      setActionSuccess(`Worker ${newWorker.name} registered successfully.`);
+      setWorkers(prev => [...prev, inserted as Worker]);
+      setActionSuccess(`Worker ${data.name} registered successfully.`);
       setIsAddWorkerOpen(false);
-      setNewWorker({ name: '', worker_code: '', job_role: '', department: 'Weaving', wage_type: 'daily', wage_rate: 750, phone: '', address: '' });
+      resetWorker();
     } catch (err: any) {
       console.error('Error adding worker:', err);
       const localWorker: Worker = {
         id: `w-${Date.now()}`,
-        worker_code: newWorker.worker_code || `WRK-${String(workers.length + 1).padStart(3, '0')}`,
-        name: newWorker.name,
-        job_role: newWorker.job_role,
-        department: newWorker.department,
-        wage_type: newWorker.wage_type,
-        wage_rate: Number(newWorker.wage_rate),
-        phone: newWorker.phone,
+        worker_code: data.worker_code?.trim() || `WRK-${String(workers.length + 1).padStart(3, '0')}`,
+        name: data.name.trim(),
+        job_role: data.job_role.trim(),
+        department: data.department,
+        wage_type: data.wage_type,
+        wage_rate: Number(data.wage_rate),
+        phone: data.phone?.trim(),
         status: 'active'
       };
       setWorkers(prev => [...prev, localWorker]);
       setIsAddWorkerOpen(false);
-      setActionSuccess(`Worker ${newWorker.name} registered.`);
+      setActionSuccess(`Worker ${data.name} registered.`);
     }
   };
 
-  const handleDisburseWageSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmitDisburseWage = async (data: WageFormValues) => {
     if (!selectedWorkerForWage) return;
 
     try {
       const payload = {
         worker_id: selectedWorkerForWage.id,
-        amount: Number(wageForm.amount),
-        payment_date: wageForm.payment_date,
-        payment_mode: wageForm.payment_mode,
-        reference: wageForm.reference || null,
-        notes: wageForm.notes || null
+        amount: Number(data.amount),
+        payment_date: data.payment_date,
+        payment_mode: data.payment_mode,
+        reference: data.reference || null,
+        notes: data.notes || null
       };
 
-      const { data, error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('export_worker_wage_payments')
         .insert([payload])
         .select()
@@ -282,19 +315,19 @@ export default function ExportWorkersPage() {
 
       if (error) throw error;
 
-      setPayments(prev => [data as WagePayment, ...prev]);
-      setActionSuccess(`Wage payment of ₹${Number(wageForm.amount).toLocaleString()} recorded for ${selectedWorkerForWage.name}.`);
+      setPayments(prev => [inserted as WagePayment, ...prev]);
+      setActionSuccess(`Wage payment of ₹${Number(data.amount).toLocaleString()} recorded for ${selectedWorkerForWage.name}.`);
       setIsDisburseWageOpen(false);
-      setWageForm({ amount: 5000, payment_date: new Date().toISOString().split('T')[0], payment_mode: 'Bank Transfer', reference: '', notes: '' });
+      resetWage();
     } catch (err: any) {
       console.error('Error disbursing wage:', err);
       const localPayment: WagePayment = {
         id: `pay-${Date.now()}`,
         worker_id: selectedWorkerForWage.id,
-        amount: Number(wageForm.amount),
-        payment_date: wageForm.payment_date,
-        payment_mode: wageForm.payment_mode,
-        reference: wageForm.reference,
+        amount: Number(data.amount),
+        payment_date: data.payment_date,
+        payment_mode: data.payment_mode,
+        reference: data.reference,
         created_at: new Date().toISOString()
       };
       setPayments(prev => [localPayment, ...prev]);
@@ -700,20 +733,20 @@ export default function ExportWorkersPage() {
 
       {/* Add Worker Modal */}
       <Modal isOpen={isAddWorkerOpen} onClose={() => setIsAddWorkerOpen(false)} title="Register New Factory Worker">
-        <form onSubmit={handleAddWorkerSubmit} className="space-y-4">
+        <form onSubmit={handleSubmitWorker(onSubmitAddWorker)} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Input
+              id="worker_name_input"
               label="Worker Full Name *"
               placeholder="e.g. Ramesh Velusamy"
-              value={newWorker.name}
-              onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
-              required
+              {...registerWorker('name')}
+              error={workerErrors.name?.message}
             />
             <Input
+              id="worker_code_input"
               label="Worker ID / Code"
               placeholder="Auto-generated if blank (e.g. WRK-006)"
-              value={newWorker.worker_code}
-              onChange={(e) => setNewWorker({ ...newWorker, worker_code: e.target.value })}
+              {...registerWorker('worker_code')}
             />
           </div>
 
@@ -721,8 +754,8 @@ export default function ExportWorkersPage() {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Department *</label>
               <select
-                value={newWorker.department}
-                onChange={(e) => setNewWorker({ ...newWorker, department: e.target.value })}
+                id="worker_dept_select"
+                {...registerWorker('department')}
                 className="w-full text-xs bg-white border border-slate-200 rounded-lg p-2 text-slate-800 outline-none"
               >
                 <option value="Weaving">Weaving</option>
@@ -735,11 +768,11 @@ export default function ExportWorkersPage() {
               </select>
             </div>
             <Input
+              id="worker_job_input"
               label="Job Role / Title *"
               placeholder="e.g. Loom Operator"
-              value={newWorker.job_role}
-              onChange={(e) => setNewWorker({ ...newWorker, job_role: e.target.value })}
-              required
+              {...registerWorker('job_role')}
+              error={workerErrors.job_role?.message}
             />
           </div>
 
@@ -747,8 +780,8 @@ export default function ExportWorkersPage() {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Wage Basis *</label>
               <select
-                value={newWorker.wage_type}
-                onChange={(e) => setNewWorker({ ...newWorker, wage_type: e.target.value as any })}
+                id="worker_wage_basis_select"
+                {...registerWorker('wage_type')}
                 className="w-full text-xs bg-white border border-slate-200 rounded-lg p-2 text-slate-800 outline-none"
               >
                 <option value="daily">Daily Wage (₹/day)</option>
@@ -757,26 +790,27 @@ export default function ExportWorkersPage() {
               </select>
             </div>
             <Input
+              id="worker_rate_input"
               label="Wage Rate (₹) *"
               type="number"
-              value={newWorker.wage_rate}
-              onChange={(e) => setNewWorker({ ...newWorker, wage_rate: Number(e.target.value) })}
-              required
+              step="0.01"
+              {...registerWorker('wage_rate', { valueAsNumber: true })}
+              error={workerErrors.wage_rate?.message}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Input
+              id="worker_phone_input"
               label="Contact Phone"
               placeholder="+91 98421..."
-              value={newWorker.phone}
-              onChange={(e) => setNewWorker({ ...newWorker, phone: e.target.value })}
+              {...registerWorker('phone')}
             />
             <Input
+              id="worker_addr_input"
               label="Residential Area"
               placeholder="e.g. Tirupur, Erode"
-              value={newWorker.address}
-              onChange={(e) => setNewWorker({ ...newWorker, address: e.target.value })}
+              {...registerWorker('address')}
             />
           </div>
 
@@ -784,7 +818,7 @@ export default function ExportWorkersPage() {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsAddWorkerOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" size="sm" isLoading={isWorkerSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
               Save Worker
             </Button>
           </div>
@@ -797,7 +831,7 @@ export default function ExportWorkersPage() {
         onClose={() => setIsDisburseWageOpen(false)} 
         title={`Disburse Wage — ${selectedWorkerForWage?.name || ''}`}
       >
-        <form onSubmit={handleDisburseWageSubmit} className="space-y-4">
+        <form onSubmit={handleSubmitWage(onSubmitDisburseWage)} className="space-y-4">
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
             <div className="text-slate-600">Worker: <span className="font-bold text-slate-900">{selectedWorkerForWage?.name}</span> ({selectedWorkerForWage?.worker_code})</div>
             <div className="text-slate-600 mt-1">Department: <span className="font-semibold text-slate-800">{selectedWorkerForWage?.department}</span> • Rate: <span className="font-bold text-emerald-700">₹{selectedWorkerForWage?.wage_rate}</span></div>
@@ -805,18 +839,19 @@ export default function ExportWorkersPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <Input
+              id="disburse_amt_input"
               label="Disbursement Amount (₹) *"
               type="number"
-              value={wageForm.amount}
-              onChange={(e) => setWageForm({ ...wageForm, amount: Number(e.target.value) })}
-              required
+              step="0.01"
+              {...registerWage('amount', { valueAsNumber: true })}
+              error={wageErrors.amount?.message}
             />
             <Input
+              id="disburse_date_input"
               label="Payment Date *"
               type="date"
-              value={wageForm.payment_date}
-              onChange={(e) => setWageForm({ ...wageForm, payment_date: e.target.value })}
-              required
+              {...registerWage('payment_date')}
+              error={wageErrors.payment_date?.message}
             />
           </div>
 
@@ -824,8 +859,8 @@ export default function ExportWorkersPage() {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Mode *</label>
               <select
-                value={wageForm.payment_mode}
-                onChange={(e) => setWageForm({ ...wageForm, payment_mode: e.target.value })}
+                id="disburse_mode_select"
+                {...registerWage('payment_mode')}
                 className="w-full text-xs bg-white border border-slate-200 rounded-lg p-2 text-slate-800 outline-none"
               >
                 <option value="Bank Transfer">Bank Transfer (NEFT/IMPS)</option>
@@ -835,10 +870,10 @@ export default function ExportWorkersPage() {
               </select>
             </div>
             <Input
+              id="disburse_ref_input"
               label="Reference / UTR / Cheque #"
               placeholder="e.g. UTR-90218847"
-              value={wageForm.reference}
-              onChange={(e) => setWageForm({ ...wageForm, reference: e.target.value })}
+              {...registerWage('reference')}
             />
           </div>
 
@@ -846,7 +881,7 @@ export default function ExportWorkersPage() {
             <Button type="button" variant="outline" size="sm" onClick={() => setIsDisburseWageOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" size="sm" isLoading={isWageSubmitting} className="bg-emerald-600 hover:bg-emerald-700">
               Confirm Disbursal
             </Button>
           </div>

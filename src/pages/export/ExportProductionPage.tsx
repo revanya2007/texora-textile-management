@@ -43,10 +43,15 @@ interface ExportOrder {
   buyer_name: string;
 }
 
+const todayProductionDate = new Date().toISOString().split('T')[0];
+
 const productionSchema = z.object({
   order_id: z.string().min(1, 'Export order is required'),
   machine_id: z.string().optional(),
-  production_date: z.string().min(1, 'Production date is required'),
+  production_date: z.string().min(1, 'Production date is required').refine(
+    (val) => val >= todayProductionDate,
+    { message: 'Production date cannot be in the past. Only today and future entries are allowed.' }
+  ),
   shift: z.string().min(1, 'Shift is required'),
   planned_quantity: z.number().positive('Planned quantity must be greater than 0'),
   actual_quantity: z.number().min(0, 'Actual quantity must be 0 or more'),
@@ -598,6 +603,7 @@ export default function ExportProductionPage() {
           <Input
             label="Production Date *"
             type="date"
+            min={todayProductionDate}
             {...register('production_date')}
             error={errors.production_date?.message}
           />

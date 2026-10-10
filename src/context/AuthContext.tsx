@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, portal: 'export' | 'domestic', role?: UserRole) => Promise<{ error: string | null }>;
+  signInWithGoogle: (portal?: 'export' | 'domestic') => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   hasAccessToPortal: (portal?: string) => boolean;
@@ -190,6 +191,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithGoogle = async (portal: 'export' | 'domestic' = 'export'): Promise<{ error: string | null }> => {
+    try {
+      const redirectUrl = `${window.location.origin}/${portal}/dashboard`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (err: any) {
+      return { error: err?.message || 'Failed to initialize Google authentication.' };
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -237,6 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         signIn,
         signUp,
+        signInWithGoogle,
         signOut,
         refreshProfile,
         hasAccessToPortal,

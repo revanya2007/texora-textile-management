@@ -27,12 +27,6 @@ interface ExportInvoice {
   export_orders?: { order_number: string; buyer_name?: string };
 }
 
-interface ExportOrder {
-  id: string;
-  order_number: string;
-  buyer_name: string;
-}
-
 const invoiceSchema = z.object({
   order_id: z.string().min(1, 'Export order is required'),
   invoice_number: z.string().min(1, 'Invoice number is required'),
@@ -49,7 +43,7 @@ type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
 export default function ExportInvoicesPage() {
   const [invoices, setInvoices] = useState<ExportInvoice[]>([]);
-  const [orders, setOrders] = useState<ExportOrder[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -60,7 +54,7 @@ export default function ExportInvoicesPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<InvoiceFormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
       invoice_number: `INV-EXP-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -72,6 +66,26 @@ export default function ExportInvoicesPage() {
       currency: 'USD',
     },
   });
+
+  const watchedOrderId = watch('order_id');
+
+  // Auto-default invoice quantity, unit price & currency when order is selected
+  useEffect(() => {
+    if (watchedOrderId) {
+      const matchedOrder = orders.find(o => o.id === watchedOrderId);
+      if (matchedOrder) {
+        if (matchedOrder.quantity) {
+          setValue('quantity', Number(matchedOrder.quantity));
+        }
+        if (matchedOrder.unit_price) {
+          setValue('unit_price', Number(matchedOrder.unit_price));
+        }
+        if (matchedOrder.currency) {
+          setValue('currency', matchedOrder.currency);
+        }
+      }
+    }
+  }, [watchedOrderId, orders, setValue]);
 
   const watchQty = watch('quantity') || 0;
   const watchPrice = watch('unit_price') || 0;
@@ -95,10 +109,10 @@ export default function ExportInvoicesPage() {
       if (iErr) throw iErr;
       setInvoices((iData as any) || []);
 
-      // 2. Fetch Orders
+      // 2. Fetch Orders with pricing and quantity details
       const { data: oData, error: oErr } = await supabase
         .from('export_orders')
-        .select('id, order_number, buyer_name')
+        .select('id, order_number, buyer_name, quantity, unit_price, currency')
         .order('created_at', { ascending: false });
 
       if (oErr) throw oErr;

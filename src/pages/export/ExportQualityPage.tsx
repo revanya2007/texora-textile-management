@@ -41,10 +41,15 @@ interface ProductionOption {
   actual_quantity: number;
 }
 
+const todayInspectionDate = new Date().toISOString().split('T')[0];
+
 const inspectionSchema = z.object({
   order_id: z.string().min(1, 'Export order is required'),
   production_id: z.string().optional(),
-  inspection_date: z.string().min(1, 'Inspection date is required'),
+  inspection_date: z.string().min(1, 'Inspection date is required').refine(
+    (val) => val === todayInspectionDate,
+    { message: 'Quality inspection can only be recorded for today.' }
+  ),
   inspected_quantity: z.number().positive('Inspected quantity must be greater than 0'),
   accepted_quantity: z.number().min(0, 'Accepted quantity must be non-negative'),
   rejected_quantity: z.number().min(0, 'Rejected quantity must be non-negative'),
@@ -499,8 +504,11 @@ export default function ExportQualityPage() {
           </div>
 
           <Input
-            label="Inspection Date *"
+            label="Inspection Date (Today Only) *"
             type="date"
+            min={todayInspectionDate}
+            max={todayInspectionDate}
+            defaultValue={todayInspectionDate}
             {...register('inspection_date')}
             error={errors.inspection_date?.message}
           />
