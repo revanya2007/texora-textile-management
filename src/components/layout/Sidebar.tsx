@@ -13,7 +13,8 @@ import {
   Wallet,
   ShieldCheck,
   ArrowRightLeft,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { cn } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +31,7 @@ const exportGroups = [
       { name: 'Raw Material / Yarn', path: '/export/materials', icon: Package },
       { name: 'Order Management', path: '/export/orders', icon: FileText },
       { name: 'Production & Machines', path: '/export/production', icon: Factory },
+      { name: 'AI Production Prediction', path: '/export/predictions', icon: Zap },
       { name: 'Quality Management', path: '/export/quality', icon: ShieldCheck },
       { name: 'Customer Management', path: '/export/buyers', icon: Users },
       { name: 'Dispatch Management', path: '/export/dispatch', icon: Truck },

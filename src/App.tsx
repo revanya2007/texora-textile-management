@@ -21,6 +21,7 @@ import ExportInvoicesPage from './pages/export/ExportInvoicesPage';
 import ExportWorkersPage from './pages/export/ExportWorkersPage';
 import ExportGarmentingPage from './pages/export/ExportGarmentingPage';
 import ExportAccountsPage from './pages/export/ExportAccountsPage';
+import ProductionPredictionsPage from './pages/export/ProductionPredictionsPage';
 
 // Domestic Pages
 import DomesticDashboardPage from './pages/domestic/DomesticDashboardPage';
@@ -75,6 +76,7 @@ function App() {
             <Route path="suppliers" element={<ExportSuppliersPage />} />
             <Route path="orders" element={<ExportOrdersPage />} />
             <Route path="production" element={<ExportProductionPage />} />
+            <Route path="predictions" element={<ProductionPredictionsPage />} />
             <Route path="quality" element={<ExportQualityPage />} />
             <Route path="buyers" element={<ExportBuyersPage />} />
             <Route path="customers" element={<ExportBuyersPage />} />
