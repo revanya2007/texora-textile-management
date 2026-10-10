@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="mintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EBF7EE"/>
+      <stop offset="100%" stop-color="#CDE8D0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#mintGrad)" stroke="#1A3835" stroke-width="2.5"/>
+  <!-- T Letter -->
+  <text x="21" y="44" font-family="Georgia, serif" font-size="34" font-weight="bold" font-style="italic" fill="#0A1E24">T</text>
+  <!-- X Letter -->
+  <text x="31" y="44" font-family="Georgia, serif" font-size="30" font-weight="bold" font-style="italic" fill="#C5A059">X</text>
+</svg>
